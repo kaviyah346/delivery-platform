@@ -39,12 +39,33 @@ public class ChatbotServiceImpl implements ChatbotService {
         this.routeRepository = routeRepository;
     }
 
+    // Known logistics keywords that indicate a valid logistics query
+    private static final Set<String> LOGISTICS_KEYWORDS = new HashSet<>(Arrays.asList(
+        "order", "ord", "vehicle", "fleet", "route", "track", "status", "capacity",
+        "kg", "kilo", "load", "truck", "carrier", "dispatch", "delivery", "shipment",
+        "overload", "violation", "safety", "pending", "assign", "driver", "route",
+        "find", "check", "show", "list", "get", "available", "occupied", "maintenance",
+        "weight", "audit", "active", "inactive", "transit", "corridor", "hub"
+    ));
+
+    private boolean isLogisticsQuery(String lower) {
+        for (String kw : LOGISTICS_KEYWORDS) {
+            if (lower.contains(kw)) return true;
+        }
+        return false;
+    }
+
     @Override
     public ChatbotResponse processQuery(ChatbotQueryRequest request) {
         String msg = (request != null && request.getMessage() != null) ? request.getMessage().trim() : "";
         String lower = msg.toLowerCase();
 
-        // 1. Order Tracking by Order ID regex or lookup
+        // 0. Empty message
+        if (msg.isEmpty()) {
+            return handleGeneralGuidance();
+        }
+
+        // 1. Order Tracking by Order ID regex
         Matcher orderMatcher = ORDER_ID_PATTERN.matcher(msg);
         if (orderMatcher.find()) {
             String foundOrderId = orderMatcher.group(1).toUpperCase();
@@ -64,38 +85,65 @@ public class ChatbotServiceImpl implements ChatbotService {
             return handleVehicleLookup(foundVNum);
         }
 
-        // 3. Capacity Search by Weight (e.g., "capacity for 250kg", "can we fit 300kg")
-        if (lower.contains("capacity") && (lower.contains("for") || lower.contains("fit") || lower.contains("available") || lower.contains("need"))) {
-            Matcher weightMatcher = WEIGHT_PATTERN.matcher(msg);
-            if (weightMatcher.find()) {
+        // 3. Capacity search with weight number — broad matching
+        // Handles: "find vehicle for 250kg", "find vehicle with 250kg", "250kg capacity", "vehicle for 300 kg"
+        boolean hasCapacityIntent = lower.contains("find vehicle") || lower.contains("vehicle for")
+                || lower.contains("vehicle with") || lower.contains("fit")
+                || (lower.contains("capacity") && (lower.contains("for") || lower.contains("need") || lower.contains("available")));
+        Matcher weightMatcher = WEIGHT_PATTERN.matcher(msg);
+        if (hasCapacityIntent && weightMatcher.find()) {
+            try {
+                double weight = Double.parseDouble(weightMatcher.group(1));
+                if (weight > 0) return handleCapacitySearch(weight);
+            } catch (NumberFormatException ignored) {}
+        }
+        // Also handle bare "Find vehicle for 250kg" chip (no "capacity" keyword needed)
+        if ((lower.contains("find vehicle") || lower.contains("vehicle for") || lower.contains("vehicle with"))) {
+            Matcher wm2 = WEIGHT_PATTERN.matcher(msg);
+            if (wm2.find()) {
                 try {
-                    double weight = Double.parseDouble(weightMatcher.group(1));
-                    return handleCapacitySearch(weight);
+                    double weight = Double.parseDouble(wm2.group(1));
+                    if (weight > 0) return handleCapacitySearch(weight);
                 } catch (NumberFormatException ignored) {}
             }
         }
 
-        // 4. Fleet Capacity / Fleet status
-        if (lower.contains("fleet") || lower.contains("vehicles") || lower.contains("trucks") || lower.contains("capacity overview")) {
+        // 4. Fleet / Fleet status
+        if (lower.contains("fleet") || lower.contains("show fleet") || lower.contains("fleet status")
+                || lower.contains("all vehicles") || lower.contains("trucks") || lower.contains("capacity overview")) {
             return handleFleetOverview();
         }
 
         // 5. Routes queries
-        if (lower.contains("route") || lower.contains("transit") || lower.contains("corridor")) {
+        if (lower.contains("route") || lower.contains("active route") || lower.contains("list route")
+                || lower.contains("transit") || lower.contains("corridor")) {
             return handleRoutesOverview();
         }
 
-        // 6. Pending Orders / Unassigned orders
-        if (lower.contains("pending") || lower.contains("unassigned") || lower.contains("allocate") || lower.contains("allocation")) {
+        // 6. Pending / Unassigned orders
+        if (lower.contains("pending") || lower.contains("unassigned") || lower.contains("allocate")
+                || lower.contains("allocation") || lower.contains("show order") || lower.contains("list order")) {
             return handlePendingOrders();
         }
 
-        // 7. Overload / Capacity safety check
-        if (lower.contains("overload") || lower.contains("violation") || lower.contains("safety") || lower.contains("exceed")) {
+        // 7. Overload / Safety check
+        if (lower.contains("overload") || lower.contains("violation") || lower.contains("safety")
+                || lower.contains("exceed") || lower.contains("overloaded")) {
             return handleOverloadCheck();
         }
 
-        // 8. Default / Help Dispatch Assistant
+        // 8. Help / General greeting
+        if (lower.contains("help") || lower.contains("hello") || lower.contains("hi")
+                || lower.contains("what can") || lower.contains("guide")) {
+            return handleGeneralGuidance();
+        }
+
+        // 9. Irrelevant / Out-of-scope query
+        if (!isLogisticsQuery(lower)) {
+            return handleIrrelevantQuery(msg);
+        }
+
+        // 10. Default fallback
         return handleGeneralGuidance();
     }
 
@@ -336,6 +384,23 @@ public class ChatbotServiceImpl implements ChatbotService {
                     List.of("Show fleet status")
             );
         }
+    }
+
+    private ChatbotResponse handleIrrelevantQuery(String originalMsg) {
+        return new ChatbotResponse(
+                "🤖 I'm your **AI Logistics Dispatch Assistant** — I'm specialized in delivery operations only.\n\n" +
+                "I couldn't process: *\"" + originalMsg + "\"*\n\n" +
+                "Here's what I **can** help you with:\n" +
+                "• **Track orders**: `Track ORD-1001` or `Where is ORD-1002?`\n" +
+                "• **Inspect fleet**: `Show fleet status` or `Check vehicle V-101`\n" +
+                "• **Capacity check**: `Find vehicle with 300kg capacity`\n" +
+                "• **Review routes**: `Show active routes` or `List active routes`\n" +
+                "• **Safety audit**: `Are any vehicles overloaded?`\n\n" +
+                "Please ask me something related to **logistics, deliveries, vehicles, or routes**.",
+                "IRRELEVANT",
+                Collections.emptyMap(),
+                List.of("Show fleet status", "Track ORD-1001", "Find vehicle with 250kg", "List active routes")
+        );
     }
 
     private ChatbotResponse handleGeneralGuidance() {
