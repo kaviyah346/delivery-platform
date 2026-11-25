@@ -1,0 +1,269 @@
+{
+  "info": {
+    "name": "UPS Logistics Management Platform API",
+    "_postman_id": "c1f7b889-8d63-47cb-9ec5-b28e46fb7a92",
+    "description": "Full REST API collection for UPS Logistics Management Platform - Delivery Route and Vehicle Capacity Management Platform.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Dashboard APIs",
+      "item": [
+        {
+          "name": "Get Dashboard Full Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "stats"]
+            },
+            "description": "Returns counts for Total Orders, Pending Deliveries, Delivered Orders, Available Vehicles, Occupied Vehicles, Active Routes, Fleet Capacity, Charts distribution, and Recent Orders."
+          }
+        },
+        {
+          "name": "Get Total Delivery Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/total-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "total-orders"]
+            }
+          }
+        },
+        {
+          "name": "Get Status Distribution (Pie Chart Data)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/status-distribution",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "status-distribution"]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle Capacity Utilization",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/vehicle-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "vehicle-stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Recent Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/recent-orders?limit=6",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "recent-orders"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "6"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delivery Order APIs",
+      "item": [
+        {
+          "name": "Get All Delivery Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "Search & Filter Delivery Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders?search=Acme&status=IN_TRANSIT&priority=HIGH",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Acme"
+                },
+                {
+                  "key": "status",
+                  "value": "IN_TRANSIT"
+                },
+                {
+                  "key": "priority",
+                  "value": "HIGH"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Paged Delivery Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/paged?page=0&size=10&sortBy=createdAt&direction=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "paged"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt"
+                },
+                {
+                  "key": "direction",
+                  "value": "desc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Order By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Order By Tracking Order ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/tracking/UPS-ORD-1001",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "tracking", "UPS-ORD-1001"]
+            }
+          }
+        },
+        {
+          "name": "Create New Delivery Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Quantum Systems Inc\",\n  \"customerContact\": \"+1-404-555-7788\",\n  \"pickupAddress\": \"700 Tech Square, Atlanta, GA\",\n  \"destinationAddress\": \"150 Northside Pkwy, Atlanta, GA\",\n  \"packageWeight\": 38.5,\n  \"priority\": \"HIGH\",\n  \"status\": \"PENDING\",\n  \"orderDate\": \"2026-11-19\",\n  \"notes\": \"Sensitive computing components\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "Update Existing Delivery Order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Acme Industrial Corp Updated\",\n  \"customerContact\": \"+1-404-555-8821\",\n  \"pickupAddress\": \"1200 Techwood Dr NW, Atlanta, GA 30318\",\n  \"destinationAddress\": \"450 Peachtree St NE, Atlanta, GA 30308\",\n  \"packageWeight\": 92.0,\n  \"priority\": \"HIGH\",\n  \"status\": \"IN_TRANSIT\",\n  \"vehicleId\": 1,\n  \"notes\": \"Updated delivery schedule notes\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Delivery Order",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vehicle APIs (Fleet & Capacity Foundation)",
+      "item": [
+        {
+          "name": "Get All Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles"]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicles/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
